@@ -16,6 +16,7 @@ runs:
   using: composite
   steps:
     - name: Install dependencies
+      if: ${{ startsWith(inputs.host-platform, 'linux') }}
       shell: bash --noprofile --norc -xeuo pipefail {0}
       run: |
         dependencies=(${{ inputs.dependencies }})

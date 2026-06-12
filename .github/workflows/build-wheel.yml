@@ -164,6 +164,7 @@ jobs:
           if-no-files-found: error
 
       - name: Set up mini CTK
+        if: ${{ inputs.host-platform != 'win-arm64' }}
         uses: ./.github/actions/fetch_ctk
         continue-on-error: false
         with:
@@ -462,6 +463,7 @@ jobs:
 
       # Note: This overwrites CUDA_PATH etc
       - name: Set up mini CTK
+        if: ${{ inputs.host-platform != 'win-arm64' }}
         uses: ./.github/actions/fetch_ctk
         continue-on-error: false
         with:
