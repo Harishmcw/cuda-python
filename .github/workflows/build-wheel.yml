@@ -39,7 +39,8 @@ jobs:
     name: py${{ matrix.python-version }}
     runs-on: ${{ (inputs.host-platform == 'linux-64' && 'linux-amd64-cpu8') ||
                  (inputs.host-platform == 'linux-aarch64' && 'linux-arm64-cpu8') ||
-                 (inputs.host-platform == 'win-64' && 'windows-2022') }}
+                 (inputs.host-platform == 'win-64' && 'windows-2022') ||
+                 (inputs.host-platform == 'win-arm64' && 'windows-11-arm64') }}
     steps:
       - name: Checkout ${{ github.event.repository.name }}
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
@@ -72,7 +73,7 @@ jobs:
         uses: nv-gha-runners/setup-proxy-cache@main
         continue-on-error: true
         # Skip cache on GitHub-hosted Windows runners.
-        if: ${{ inputs.host-platform != 'win-64' }}
+        if: ${{ !startsWith(inputs.host-platform, 'win') }}
         with:
           enable-apt: true
 
@@ -94,16 +95,19 @@ jobs:
         if: ${{ startsWith(inputs.host-platform, 'win') }}
         env:
           YQ_VERSION: v4.52.5
-          YQ_SHA256: 47594981f3848a4b4447494adeca9555f908f7cf0a89c4da3fd0243a4631da1c
+          YQ_SHA256_AMD64: 47594981f3848a4b4447494adeca9555f908f7cf0a89c4da3fd0243a4631da1c
+          YQ_SHA256_ARM64: 236867affa7f18701d4c763cf16b6df962cf4f7e89a8570a5954cf94a38f41c7
           YQ_DIR: yq
         shell: pwsh -command ". '{0}'"
         run: |
-          $yqUrl = "https://github.com/mikefarah/yq/releases/download/${env:YQ_VERSION}/yq_windows_amd64.exe"
+          $arch = if ("${{ inputs.host-platform }}" -eq "win-arm64") { "arm64" } else { "amd64" }
+          $expectedHash = if ($arch -eq "arm64") { $env:YQ_SHA256_ARM64 } else { $env:YQ_SHA256_AMD64 }
+          $yqUrl = "https://github.com/mikefarah/yq/releases/download/${env:YQ_VERSION}/yq_windows_${arch}.exe"
           mkdir -Force -ErrorAction SilentlyContinue "${env:YQ_DIR}" | Out-Null
           Invoke-WebRequest -UseBasicParsing -OutFile "${env:YQ_DIR}/yq.exe" -Uri "$yqUrl"
           $hash = (Get-FileHash -Algorithm SHA256 "${env:YQ_DIR}/yq.exe").Hash.ToLower()
-          if ($hash -ne $env:YQ_SHA256) {
-            Write-Error "SHA256 mismatch for yq: expected $env:YQ_SHA256, got $hash"
+          if ($hash -ne $expectedHash) {
+            Write-Error "SHA256 mismatch for yq: expected $expectedHash, got $hash"
             exit 1
           }
           ls -l $env:YQ_DIR
@@ -207,7 +211,7 @@ jobs:
             echo "ok!"
 
       - name: Report sccache stats (cuda.bindings)
-        if: ${{ inputs.host-platform != 'win-64' }}
+        if: ${{ !startsWith(inputs.host-platform, 'win') }}
         uses: ./.github/actions/sccache-summary
         with:
           json-file: sccache_bindings.json
@@ -280,7 +284,7 @@ jobs:
             echo "ok!"
 
       - name: Report sccache stats (cuda.core)
-        if: ${{ inputs.host-platform != 'win-64' }}
+        if: ${{ !startsWith(inputs.host-platform, 'win') }}
         uses: ./.github/actions/sccache-summary
         with:
           json-file: sccache_core.json
@@ -537,7 +541,7 @@ jobs:
             echo "ok!"
 
       - name: Report sccache stats (cuda.core prev)
-        if: ${{ inputs.host-platform != 'win-64' }}
+        if: ${{ !startsWith(inputs.host-platform, 'win') }}
         uses: ./.github/actions/sccache-summary
         with:
           json-file: sccache_core_prev.json

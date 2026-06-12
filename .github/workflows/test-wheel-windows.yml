@@ -56,7 +56,8 @@ jobs:
         shell: bash --noprofile --norc -xeuo pipefail {0}
     env:
       BUILD_TYPE: ${{ inputs.build-type }}
-      ARCH: ${{ (inputs.host-platform == 'win-64' && 'amd64') }}
+      ARCH: ${{ (inputs.host-platform == 'win-64' && 'amd64') ||
+                (inputs.host-platform == 'win-arm64' && 'arm64') }}
     outputs:
       MATRIX: ${{ steps.compute-matrix.outputs.MATRIX }}
     steps:
