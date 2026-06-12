@@ -301,7 +301,7 @@ jobs:
         host-platform:
           - win-arm64
     name: Build ${{ matrix.host-platform }}, CUDA ${{ needs.ci-vars.outputs.CUDA_BUILD_VER }}
-    if: ${{ github.repository_owner == 'nvidia' && !fromJSON(needs.should-skip.outputs.skip) && !fromJSON(needs.should-skip.outputs.doc-only) }}
+    if: ${{ !fromJSON(needs.should-skip.outputs.skip) && !fromJSON(needs.should-skip.outputs.doc-only) }}
     secrets: inherit
     uses: ./.github/workflows/build-wheel.yml
     with:
